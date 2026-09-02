@@ -19,7 +19,7 @@ To fix the IPv6 fallback issue with rofs downloader, simply use the command
 ```bash
 node --dns-result-order=ipv4first "rofs downloader.js"
 ```
-To fix the issue
+This makes Node.js prefer IPv4 addresses, avoiding the IPv6 fallback issue.
 
 ## How do I download windows 96 using this?
 
