@@ -14,6 +14,13 @@ Even if you rehost *and* add some value, <ins>you could still get a DMCA</ins> f
 
 <ins>***Rehosting is at your own risk!***</ins>
 
+## Fixing the issues with "rofs downloader.js"
+To fix the IPv6 fallback issue with rofs downloader, simply use the command
+```bash
+node --dns-result-order=ipv4first "rofs downloader.js"
+```
+To fix the issue
+
 ## How do I download windows 96 using this?
 
 1. Download this repository.
