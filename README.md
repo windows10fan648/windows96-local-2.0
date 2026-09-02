@@ -28,6 +28,7 @@ This makes Node.js prefer IPv4 addresses, avoiding the IPv6 fallback issue.
 2. Run `npm install` and `npx tsc`
 
 3. Run `node "rofs downloader.js" https://windows96.net` to start downloading.
+
 ⚠️ Note: During the download, some files may temporarily return HTTP 404 errors. The ROFS downloader may automatically try an alternative path for the file. This can be normal, so don't assume the download has failed just because a 404 appears in the console.
 
 5. Wait until you see `Done` in the console.
