@@ -22,7 +22,7 @@ export async function removeRequires(file: string): Promise<boolean> {
         format: "iife",
         file
     }));
-    return True;
+    return true;
 }
 
 export async function transpileFile(file: string): Promise<void> {
