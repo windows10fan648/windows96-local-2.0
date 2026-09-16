@@ -20,7 +20,7 @@ Even if you rehost *and* add some value, <ins>you could still get a DMCA</ins> f
 
 2. Run `npm install` and `npx tsc`
 
-3. Run `node "rofs downloader.js" https://windows96.net` to start downloading.
+3. Run `node --dns-result-order=ipv4first "rofs downloader.js" https://windows96.net` to start downloading.
 
 4. Wait until you see `Done` in the console.
 
