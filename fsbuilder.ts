@@ -1,4 +1,4 @@
-import fs from "fs";
+import { readdir, stat, writeFile } from "fs/promises";
 import path from "path";
 
 export enum fileType {
@@ -11,54 +11,64 @@ export type RofsJson = Record<string, {
     type: fileType,
 }>;
 
-let rofs: RofsJson;
-
-export function processDir(dir: string): void {
+export async function processDir(dir: string, rofs: RofsJson): Promise<void> {
     console.debug(`Processing ${dir}`);
     rofs[`/${dir}`] = {
         length: 0,
-        type  : fileType.directory
+        type: fileType.directory
     };
 
-    const dirListing = fs.readdirSync(dir);
-    dirListing.forEach((cFile: string) => {
-        const fileWithDir = path.posix.join(dir, cFile);
-        if (fs.statSync(fileWithDir).isDirectory()) processDir(fileWithDir);
-        else processFile(fileWithDir);
-    });
+    const dirListing = await readdir(dir);
+    await Promise.all(dirListing.map(async (cFile: string) => {
+        const fileWithDir = path.join(dir, cFile);
+        const fileStats = await stat(fileWithDir);
+
+        if (fileStats.isDirectory()) {
+            await processDir(fileWithDir, rofs);
+        } else {
+            await processFile(fileWithDir, rofs, fileStats.size);
+        }
+    }));
 }
 
-export function processFile(file: string): void {
+export async function processFile(file: string, rofs: RofsJson, fileLength?: number): Promise<void> {
     console.debug(`Processing ${file}`);
-    const fileLength = fs.statSync(file).size;
+    const length = fileLength ?? (await stat(file)).size;
+
     rofs[`/${file}`] = {
-        length: fileLength,
-        type  : fileType.file
+        length,
+        type: fileType.file
     };
 }
 
 export async function build(rootDir: string): Promise<RofsJson> {
-    rofs = { "/": { length: 0, type: fileType.directory } };
+    const rofs: RofsJson = {
+        "/": { length: 0, type: fileType.directory }
+    };
 
-    processDir(path.normalize(rootDir));
+    const normalizedRoot = path.normalize(rootDir);
+    await processDir(normalizedRoot, rofs);
+
     if (rootDir === ".") delete rofs["/."];
 
     return rofs;
 }
 
-export default async function BuildAndWrite(rootDir: string): Promise<void> {
+export default async function buildAndWrite(rootDir: string): Promise<void> {
     const rofs = await build(rootDir);
 
-    await new Promise<void>((resolve, reject) => {
-        console.debug(rofs);
-
-        const writeStream = fs.createWriteStream(path.resolve(rootDir, "rofs.json"));
-        writeStream.write(JSON.stringify(rofs));
-        writeStream.end();
-
-        writeStream.on("finish", resolve);
-        writeStream.on("error", reject);
-    });
+    console.debug(rofs);
+    await writeFile(
+        path.resolve(rootDir, "rofs.json"),
+        JSON.stringify(rofs)
+    );
 }
 
-if (require.main === module) BuildAndWrite(process.argv[2]).then(() => console.log("Done"));
+if (require.main === module) {
+    buildAndWrite(process.argv[2] ?? ".")
+        .then(() => console.log("Done"))
+        .catch((err: unknown) => {
+            console.error(err);
+            process.exitCode = 1;
+        });
+}
