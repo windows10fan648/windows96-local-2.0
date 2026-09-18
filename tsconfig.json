@@ -1,12 +1,11 @@
 {
     "compilerOptions": {
-        "module"             : "commonjs",
-        "target"             : "ES2021",
-        "jsx"                : "preserve",
+        "module": "nodenext",
+        "target": "esnext",
+        "jsx": "preserve",
         "strictFunctionTypes": true,
-        "strict"             : true,
-        "esModuleInterop"    : true,
-        "moduleResolution"   : "Node"
+        "strict": true,
+        "esModuleInterop": true
     },
     "exclude": [
         "node_modules",
