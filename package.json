@@ -4,7 +4,11 @@
     "description": "Windows 96 local but it actually works",
     "main": "rofs downloader.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "transpile": "node "transpile.js"",
+        "download": "node "rofs downloader.js"",
+        "test": "npm run typecheck"
     },
     "keywords": [
         "windows 96",
@@ -13,6 +17,9 @@
     ],
     "author": "NanderTGA (https://nandertga.ddns.net)",
     "license": "MIT",
+    "engines": {
+        "node": ">=20"
+    },
     "dependencies": {
         "@babel/core": "^8.0.5",
         "@babel/preset-env": "^8.0.5",
