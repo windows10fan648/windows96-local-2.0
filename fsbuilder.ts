@@ -21,7 +21,7 @@ export function processDir(dir: string): void {
     };
 
     const dirListing = fs.readdirSync(dir);
-    dirListing.forEach(cFile => {
+    dirListing.forEach((cFile: string) => {
         const fileWithDir = path.posix.join(dir, cFile);
         if (fs.statSync(fileWithDir).isDirectory()) processDir(fileWithDir);
         else processFile(fileWithDir);
@@ -38,28 +38,26 @@ export function processFile(file: string): void {
 }
 
 export async function build(rootDir: string): Promise<RofsJson> {
-    return new Promise( resolve => {
-        rofs = { "/": { length: 0, type: fileType.directory } };
-    
-        processDir(path.normalize(rootDir));
-        if (rootDir == ".") delete rofs["/."];
-        resolve(rofs);
-    });
+    rofs = { "/": { length: 0, type: fileType.directory } };
+
+    processDir(path.normalize(rootDir));
+    if (rootDir === ".") delete rofs["/."];
+
+    return rofs;
 }
 
 export default async function BuildAndWrite(rootDir: string): Promise<void> {
     const rofs = await build(rootDir);
 
-    return new Promise( (resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         console.debug(rofs);
-        
+
         const writeStream = fs.createWriteStream(path.resolve(rootDir, "rofs.json"));
         writeStream.write(JSON.stringify(rofs));
         writeStream.end();
 
-        writeStream.on("finish", () => resolve());
-
-        writeStream.on("error", err => reject(err));
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
     });
 }
 
