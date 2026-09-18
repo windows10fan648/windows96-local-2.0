@@ -1,8 +1,7 @@
-import fs from "fs";
+import { writeFile, readdir, stat } from "fs/promises";
 import path from "path";
 import { transformFileAsync } from "@babel/core";
 import { rollup } from "rollup";
-import JSZip from "jszip";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
@@ -10,9 +9,7 @@ export async function removeRequires(file: string): Promise<boolean> {
     const bundle = await rollup({
         input: file,
         plugins: [
-            nodeResolve({
-                browser: true
-            }),
+            nodeResolve({ browser: true }),
             commonjs()
         ]
     });
@@ -47,41 +44,33 @@ export async function transpileFile(file: string): Promise<void> {
         });
 
         if (!result) {
-            console.error(`Error transpiling ${file}`);
-            return;
+            throw new Error(`Babel returned no result for ${file}`);
         }
 
-        fs.writeFileSync(file, result.code ?? "");
+        await writeFile(file, result.code ?? "");
         await removeRequires(file);
 
         console.log(`Transpiled ${file}`);
-    } catch (err) {
-        console.debug(`Failed to transpile ${file}`, err);
+    } catch (err: unknown) {
+        console.error(`Failed to transpile ${file}`, err);
+        throw err;
     }
 }
 
 export async function transpileDir(dir: string): Promise<void> {
-    const files = fs.readdirSync(dir);
+    const files = await readdir(dir);
 
     await Promise.all(files.map(async (file: string) => {
         const fileWithDir = path.resolve(dir, file);
+        const fileStats = await stat(fileWithDir);
 
-        if (fs.statSync(fileWithDir).isDirectory()) {
+        if (fileStats.isDirectory()) {
             await transpileDir(fileWithDir);
             return;
         }
 
-        switch (path.extname(fileWithDir)) {
-            case ".js":
-                await transpileFile(fileWithDir);
-                break;
-            case ".zip":
-                // Zip extraction is not implemented yet.
-                // The archive should be extracted without overwriting existing files.
-                new JSZip();
-                break;
-            default:
-                break;
+        if (path.extname(fileWithDir) === ".js") {
+            await transpileFile(fileWithDir);
         }
     }));
 }
@@ -94,4 +83,9 @@ export default async function transpileAll(): Promise<void[]> {
     ].map((dir: string) => transpileDir(dir)));
 }
 
-if (require.main === module) transpileFile("fak.js");
+if (require.main === module) {
+    transpileFile("fak.js")
+        .catch(() => {
+            process.exitCode = 1;
+        });
+}
