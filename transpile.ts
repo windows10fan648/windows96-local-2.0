@@ -42,7 +42,7 @@ export async function transpileFile(file: string): Promise<void> {
         ]
     }).then( result => {
         if (!result) return console.error(`Error transpiling ${file}`);
-        fs.writeFileSync(file, result.code | "");
+        fs.writeFileSync(file, result.code ?? "");
         removeRequires(file);
 
         console.log(`Transpiled ${file}`);
