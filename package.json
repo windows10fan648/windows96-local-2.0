@@ -31,6 +31,8 @@
         "typescript": "^7.0.2"
     },
     "devDependencies": {
-        "@types/babel__core": "^7.20.5"
+        "@types/babel__core": "^7.20.5",
+        "@types/convert-source-map": "^2.0.3",
+        "@types/node": "^26.6.1"
     }
 }
