@@ -8,7 +8,7 @@ import commonjs from "@rollup/plugin-commonjs";
 
 export async function removeRequires(file: string): Promise<boolean> {
     const bundle = await rollup({
-        input  : file,
+        input: file,
         plugins: [
             nodeResolve({
                 browser: true
@@ -16,69 +16,82 @@ export async function removeRequires(file: string): Promise<boolean> {
             commonjs()
         ]
     });
-    console.log("bundle: ", bundle);
-    
-    console.log("bundle.write(): ", await bundle.write({
-        format: "iife",
-        file
-    }));
-    return true;
+
+    try {
+        await bundle.write({
+            format: "iife",
+            file
+        });
+        return true;
+    } finally {
+        await bundle.close();
+    }
 }
 
 export async function transpileFile(file: string): Promise<void> {
-    await transformFileAsync(file, {
-        presets: [
-            [
-                "@babel/preset-env", {
-                    corejs: {
-                        "version": 3
-                    },
-                    useBuiltIns: "usage",
-                    targets    : {
-                        "ie": "11"
+    try {
+        const result = await transformFileAsync(file, {
+            presets: [
+                [
+                    "@babel/preset-env", {
+                        corejs: {
+                            version: 3
+                        },
+                        useBuiltIns: "usage",
+                        targets: {
+                            ie: "11"
+                        }
                     }
-                }
+                ]
             ]
-        ]
-    }).then( result => {
-        if (!result) return console.error(`Error transpiling ${file}`);
+        });
+
+        if (!result) {
+            console.error(`Error transpiling ${file}`);
+            return;
+        }
+
         fs.writeFileSync(file, result.code ?? "");
-        removeRequires(file);
+        await removeRequires(file);
 
         console.log(`Transpiled ${file}`);
-    }).catch( err => console.debug(`Failed to transpile ${file}`));
+    } catch (err) {
+        console.debug(`Failed to transpile ${file}`, err);
+    }
 }
 
-export async function transpileDir(dir: string) {
+export async function transpileDir(dir: string): Promise<void> {
     const files = fs.readdirSync(dir);
-    files.forEach( async file => {
+
+    await Promise.all(files.map(async (file: string) => {
         const fileWithDir = path.resolve(dir, file);
-        if (fs.statSync(fileWithDir).isDirectory()) transpileDir(fileWithDir);
-        else switch (path.extname(fileWithDir)) {
+
+        if (fs.statSync(fileWithDir).isDirectory()) {
+            await transpileDir(fileWithDir);
+            return;
+        }
+
+        switch (path.extname(fileWithDir)) {
             case ".js":
-                transpileFile(fileWithDir);
+                await transpileFile(fileWithDir);
                 break;
-            case ".zip": {
-                break; // not iomplentmented yet
-                //notimpaelern
-                // extract the zip file, and make sure it doesn't overwrite anything
-                const zip = new JSZip();
-
-
+            case ".zip":
+                // Zip extraction is not implemented yet.
+                // The archive should be extracted without overwriting existing files.
+                new JSZip();
                 break;
-            }
             default:
                 break;
         }
-    });
+    }));
 }
 
-export default async function transpileAll() {
+export default async function transpileAll(): Promise<void[]> {
     return Promise.all([
         "data",
         "dl",
         "system"
-    ].map( async dir => transpileDir(dir) ));
+    ].map((dir: string) => transpileDir(dir)));
 }
 
-if (require.main === module) /*transpileAll();*/ transpileFile("fak.js");
+if (require.main === module) transpileFile("fak.js");
